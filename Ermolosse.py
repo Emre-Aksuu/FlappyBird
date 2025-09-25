@@ -37,25 +37,27 @@ os.makedirs(GRAPH_DIR, exist_ok=True)
 # ---- Gestion des scores et graph ----
 current_cycle_scores = []
 
+def show_graph(scores, title="Évolution des scores"):
+    if not scores:
+        return
+    plt.figure(figsize=(5, 3))
+    plt.plot(range(1, len(scores)+1), scores, marker='o', color='magenta')
+    plt.title(title)
+    plt.xlabel("Partie")
+    plt.ylabel("Score")
+    plt.tight_layout()
+    plt.show()
+
 def save_score(score):
     global current_cycle_scores
     current_cycle_scores.append(score)
 
     if len(current_cycle_scores) == 10:
-        # Générer graphique
-        plt.figure(figsize=(5,3))
-        plt.plot(range(1,11), current_cycle_scores, marker='o', color='magenta')
-        plt.title("Évolution des 10 derniers scores")
-        plt.xlabel("Partie")
-        plt.ylabel("Score")
-        plt.tight_layout()
-        graph_path = os.path.join(GRAPH_DIR, f"scores_cycle.png")
-        plt.savefig(graph_path)
-        plt.show()
-        # Réinitialiser cycle
+        # Graph automatique toutes les 10 parties
+        show_graph(current_cycle_scores, "Évolution des 10 derniers scores")
         current_cycle_scores = []
 
-    # Sauvegarder le top scores pour le menu
+    # Sauvegarder le top 10 global
     top_scores = load_top_scores_file()
     top_scores.append(score)
     top_scores = sorted(top_scores, reverse=True)[:10]
@@ -149,6 +151,7 @@ restart_rect = pygame.Rect(200, 400, 120, 50)
 assist_rect = pygame.Rect(150, 200, 200, 50)
 manual_rect = pygame.Rect(150, 270, 200, 50)
 scores_rect = pygame.Rect(150, 340, 200, 50)
+graph_rect = pygame.Rect(150, 410, 200, 50)  # Nouveau bouton "Graph"
 sound_rect = pygame.Rect(150, 500, 200, 50)
 music_rect = pygame.Rect(150, 550, 200, 50)
 back_rect = pygame.Rect(180, 500, 140, 50)
@@ -178,6 +181,8 @@ while running:
                             pygame.mixer.music.play(-1)
                     elif scores_rect.collidepoint(event.pos):
                         show_scores = True
+                    elif graph_rect.collidepoint(event.pos):
+                        show_graph(current_cycle_scores, "Évolution en cours (cycle non fini)")
                     elif sound_rect.collidepoint(event.pos):
                         sound_on = not sound_on
                     elif music_rect.collidepoint(event.pos):
@@ -191,6 +196,12 @@ while running:
             if mode=="manual" and not game_over:
                 if event.key == pygame.K_SPACE:
                     bird.flap()
+            elif mode=="assist" and not game_over:
+                if event.key == pygame.K_SPACE:
+                    # Quitter l'IA, enregistrer le score et revenir au menu
+                    game_over = True
+                    save_score(score)
+                    go_to_selection()
 
     if mode is None:
         if show_scores:
@@ -207,6 +218,7 @@ while running:
             draw_button(assist_rect, "Assist (IA)")
             draw_button(manual_rect, "Manuel (ESPACE)")
             draw_button(scores_rect, "Scores")
+            draw_button(graph_rect, "Graph")
             draw_button(sound_rect, f"Son: {'ON' if sound_on else 'OFF'}")
             draw_button(music_rect, f"Music: {'ON' if music_on else 'OFF'}")
     else:
@@ -246,6 +258,12 @@ while running:
     clock.tick(60)
 
 pygame.quit()
+
+
+
+
+
+
 
 
 
